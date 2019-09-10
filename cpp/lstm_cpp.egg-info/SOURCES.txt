@@ -1,0 +1,6 @@
+lstm.cpp
+setup.py
+lstm_cpp.egg-info/PKG-INFO
+lstm_cpp.egg-info/SOURCES.txt
+lstm_cpp.egg-info/dependency_links.txt
+lstm_cpp.egg-info/top_level.txt
