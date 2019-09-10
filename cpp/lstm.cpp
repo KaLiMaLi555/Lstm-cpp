@@ -115,13 +115,9 @@ vector <at::Tensor> lstm_backward(Tensor dh, Tensor dc, Tensor c, Tensor Ct_1, T
 {
     
     auto dho = tanh(c) * dh * ho * (1-ho);
-    cout << "-------------------------ok---------------------1\n";
     auto dhc = (ho * dh * (1 - c*c)) + dc;
-    cout << "-------------------------ok---------------------2\n";
     auto dhf = Ct_1 * dc;
-    cout << "-------------------------ok---------------------3\n";
     dhf *= hf * (1-hf);
-    cout << "-------------------------ok---------------------4\n";
     auto dhi = hc * dc;
     dhi *= hi * (1-hi);
     
@@ -130,20 +126,16 @@ vector <at::Tensor> lstm_backward(Tensor dh, Tensor dc, Tensor c, Tensor Ct_1, T
     auto dWf = mm(X.transpose(0,1), dhf);
     auto dbf = dhf;
     auto dXf = mm(dhf, W[0]);
-    cout << "-------------------------ok---------------------\n";
 
     auto dWi = mm(X.transpose(0,1), dhi);
-    cout << "-------------------------ok---------------------\n";
     auto dbi = dhi;
     auto dXi = mm(dhi, W[1]);
 
     auto dWo = mm(X.transpose(0,1), dho);
-    cout << "-------------------------ok---------------------\n";
     auto dbo = dho;
     auto dXo = mm(dho, W[2]);
 
     auto dWc = mm(X.transpose(0,1), dhc);
-    cout << "-------------------------ok---------------------\n";
     auto dbc = dhc;
     auto dXc = mm(dhc, W[3]);
 
