@@ -140,10 +140,10 @@ vector <at::Tensor> lstm_backward(Tensor dh, Tensor dc, Tensor c, Tensor Ct_1, T
     auto dXc = mm(dhc, W[3]);
 
     auto dX = dXf + dXi + dXo + dXc;
-    dh = dX.slice(1, 32);
+    dh = dX.slice(1, 128);
 
     dc = hf * dc; 
-    return {dho, dhc, dhf, dhi, dWf, dbf, dWi, dbi, dWo, dbo, dWc, dbc, dh, dc};
+    return {dWf, dbf, dWi, dbi, dWo, dbo, dWc, dbc, dh, dc};
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) 
