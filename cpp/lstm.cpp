@@ -27,11 +27,8 @@
 // }
 
 
-
-
-
-// std::vector<torch::Tensor> lltm_backward(
-//     torch::Tensor grad_h,
+// std::vector<torch::Tensor> lltm_backward(*state
+//     torch::Tensor grad_h,*state
 //     torch::Tensor grad_cell,
 //     torch::Tensor new_cell,
 //     torch::Tensor input_gate,
@@ -106,14 +103,18 @@ vector <at::Tensor> lstm_forward(Tensor input, Tensor weights, Tensor Wy, Tensor
     auto c = hf * Ct_1 + hi * hc;
     auto h = ho * tanh(c);
 
-    auto y = softmax(addmm(by, h, Wy.transpose(0,1)), 1);
+    auto y = addmm(by, h, Wy.transpose(0,1));
 
-    return {y, h, c, Ct_1, hf, hi, ho, hc, X, gate_weights};
+    return {h, c, y, Ct_1, hf, hi, ho, hc, X, gate_weights};
 }
 
-vector <at::Tensor> lstm_backward(Tensor dh, Tensor dc, Tensor c, Tensor Ct_1, Tensor hf, Tensor hi, Tensor ho, Tensor hc, Tensor X, Tensor gate_weights, Tensor weights)
+vector <at::Tensor> lstm_backward(Tensor dh, Tensor dc, Tensor h, Tensor c, Tensor y, Tensor Ct_1, Tensor hf, Tensor hi, Tensor ho, Tensor hc, Tensor X, Tensor gate_weights, Tensor weights)
 {
-    
+    auto dy = softmax(y, 1);
+
+    auto dWy = mm(h.transpose(0,1), dy);
+    auto dby = dy;
+
     auto dho = tanh(c) * dh * ho * (1-ho);
     auto dhc = (ho * dh * (1 - c*c)) + dc;
     auto dhf = Ct_1 * dc;
@@ -140,10 +141,15 @@ vector <at::Tensor> lstm_backward(Tensor dh, Tensor dc, Tensor c, Tensor Ct_1, T
     auto dXc = mm(dhc, W[3]);
 
     auto dX = dXf + dXi + dXo + dXc;
-    dh = dX.slice(1, 128);
+    const auto state_size = dh.size(1);
+    dh = dX.slice(1, 0, state_size);
+    auto d_input = dX.slice(1, state_size);
+
+    auto d_weights = cat({dWf, dWi, dWo, dWc}, 1);
+    auto d_bias = cat({dbf, dbi, dbo, dbc}, 1);
 
     dc = hf * dc; 
-    return {dWf, dbf, dWi, dbi, dWo, dbo, dWc, dbc, dh, dc};
+    return {d_input, d_weights.transpose(0,1), dWy.transpose(0,1), d_bias, dby, dh, dc};
 }
 
 PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) 

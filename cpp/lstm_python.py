@@ -7,24 +7,21 @@ import math
 import lstm_cpp
 
 
-class LLTMFunction(torch.autograd.Function):
+class LSTMFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input, weights, Wy, bias, by, old_h, old_cell):
-        outputs = lstm_cpp.forward(
-            input, weights, Wy, bias, by, old_h, old_cell)
-        print(outputs[-2].T.size())
-        new_h, new_cell = outputs[1:3]
-        variables = outputs[2:] + [weights]
+        outputs = lstm_cpp.forward(input, weights, Wy, bias, by, old_h, old_cell)
+        new_h, new_cell = outputs[:2]
+        variables = outputs + [weights]
         ctx.save_for_backward(*variables)
 
         return new_h, new_cell
 
     @staticmethod
     def backward(ctx, grad_h, grad_cell):
-        print('--------ok----   ', grad_h.size())
         outputs = lstm_cpp.backward(grad_h.contiguous(), grad_cell.contiguous(), *ctx.saved_variables)
-        dWf, dbf, dWi, dbi, dWo, dbo, dWc, dbc, dh, dc = outputs
-        return dWf, dbf, dWi, dbi, dWo, dbo, dWc, dbc, dh, dc
+        d_input, d_weights, dWy, d_bias, dby, dh, dc = outputs
+        return d_input, d_weights, dWy, d_bias, dby, dh, dc
 
 
 class LLTM(torch.nn.Module):
@@ -32,8 +29,7 @@ class LLTM(torch.nn.Module):
         super(LLTM, self).__init__()
         self.input_features = input_features
         self.state_size = state_size
-        self.weights = torch.nn.Parameter(torch.empty(
-            4 * state_size, input_features + state_size))
+        self.weights = torch.nn.Parameter(torch.empty(4 * state_size, input_features + state_size))
         self.Wy = torch.nn.Parameter(torch.empty(input_features, state_size))
         self.bias = torch.nn.Parameter(torch.empty(4 * state_size))
         self.by = torch.nn.Parameter(torch.empty(input_features))
@@ -45,7 +41,7 @@ class LLTM(torch.nn.Module):
             weight.data.uniform_(-stdv, +stdv)
 
     def forward(self, input, state):
-        return LLTMFunction.apply(input, self.weights, self.Wy, self.bias, self.by, *state)
+        return LSTMFunction.apply(input, self.weights, self.Wy, self.bias, self.by, *state)
 
 
 batch_size = 16
