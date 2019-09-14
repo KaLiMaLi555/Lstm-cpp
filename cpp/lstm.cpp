@@ -70,24 +70,6 @@
 using namespace torch;
 using namespace std;
 
-Tensor d_tanh(Tensor z)
-{
-    return 1 - z.tanh().pow(2);
-}
-
-Tensor d_sigmoid(Tensor z)
-{
-    auto x = sigmoid(z);
-    return x * (1-x);
-}
-
-Tensor d_elu(Tensor z, Scalar alpha = 1.0)
-{
-    auto e = z.exp();
-    auto mask = (alpha * (e-1)) < 0;
-    return (z > 0).type_as(z) + mask.type_as(z) + (alpha * e);
-}
-
 vector <at::Tensor> lstm_forward(Tensor input, Tensor weights, Tensor Wy, Tensor bias, Tensor by, Tensor ht_1, Tensor Ct_1)
 {
     auto X = cat({ht_1, input}, 1);
